@@ -59,7 +59,7 @@ def parse_option():
     parser.add_argument('--crop', type=float, default=0.2, help='minimum crop')
 
     # dataset
-    parser.add_argument('--dataset', type=str, default='imagenet100', choices=['imagenet100', 'imagenet'])
+    parser.add_argument('--dataset', type=str, default='imagenet100', choices=['imagenet100', 'imagenet','places365'])
 
     # resume
     parser.add_argument('--resume', default='', type=str, metavar='PATH',
@@ -86,9 +86,13 @@ def parse_option():
 
     # set the path according to the environment
     if hostname.startswith('visiongpu'):
-        opt.data_folder = '/dev/shm/yonglong/{}'.format(opt.dataset)
-        opt.save_path = '/data/vision/phillip/rep-learn/Pedesis/CMC/{}_linear'.format(opt.dataset)
-        opt.tb_path = '/data/vision/phillip/rep-learn/Pedesis/CMC/{}_linear_tensorboard'.format(opt.dataset)
+        if 'imagenet' in opt.dataset:        
+            opt.data_folder = '/data/vision/torralba/datasets/imagenet_pytorch/imagenet_pytorch'
+        elif 'places' in opt.dataset:
+            opt.data_folder = '/data/vision/torralba/datasets/places/places365_standard/places365standard_easyformat'
+            
+        opt.save_path = '/data/vision/torralba/ganprojects/yyou/CMC/eval/{}_linear'.format(opt.dataset)
+        opt.tb_path = '/data/vision/torralba/ganprojects/yyou/CMC/eval/{}_linear_tensorboard'.format(opt.dataset)
 
     if opt.dataset == 'imagenet':
         if 'alexnet' not in opt.model:
@@ -127,6 +131,8 @@ def parse_option():
         opt.n_label = 100
     if opt.dataset == 'imagenet':
         opt.n_label = 1000
+    if opt.dataset == 'places365':
+        opt.n_label = 365
 
     return opt
 

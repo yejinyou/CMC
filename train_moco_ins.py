@@ -63,7 +63,7 @@ def parse_option():
     parser.add_argument('--crop', type=float, default=0.2, help='minimum crop')
 
     # dataset
-    parser.add_argument('--dataset', type=str, default='imagenet100', choices=['imagenet100', 'imagenet'])
+    parser.add_argument('--dataset', type=str, default='imagenet100', choices=['imagenet100', 'imagenet', 'places365'])
 
     # resume
     parser.add_argument('--resume', default='', type=str, metavar='PATH',
@@ -97,13 +97,18 @@ def parse_option():
 
     # set the path according to the environment
     if hostname.startswith('visiongpu'):
-        opt.data_folder = '/dev/shm/yonglong/{}'.format(opt.dataset)
-        opt.model_path = '/data/vision/phillipi/rep-learn/Pedesis/CMC/{}_models'.format(opt.dataset)
-        opt.tb_path = '/data/vision/phillipi/rep-learn/Pedesis/CMC/{}_tensorboard'.format(opt.dataset)
+        #opt.data_folder = '/dev/shm/yonglong/{}'.format(opt.dataset)
+        if 'imagenet' in opt.dataset:        
+            opt.data_folder = '/data/vision/torralba/datasets/imagenet_pytorch/imagenet_pytorch'
+        elif 'places' in opt.dataset:
+            opt.data_folder = '/data/vision/torralba/datasets/places/places365_standard/places365standard_easyformat'
+        opt.model_path = '/data/vision/torralba/ganprojects/yyou/CMC/{}_models'.format(opt.dataset)
+        opt.tb_path = '/data/vision/torralba/ganprojects/yyou/CMC/{}_tensorboard'.format(opt.dataset)
     else:
         raise NotImplementedError('server invalid: {}'.format(hostname))
 
-    if opt.dataset == 'imagenet':
+    # Let's crop places365 the exact same way image net is cropped for now.
+    if opt.dataset == 'imagenet' or opt.dataset == 'places':
         if 'alexnet' not in opt.model:
             opt.crop = 0.08
 
@@ -115,9 +120,9 @@ def parse_option():
     opt.method = 'softmax' if opt.softmax else 'nce'
     prefix = 'MoCo{}'.format(opt.alpha) if opt.moco else 'InsDis'
 
-    opt.model_name = '{}_{}_{}_{}_lr_{}_decay_{}_bsz_{}_crop_{}'.format(prefix, opt.method, opt.nce_k, opt.model,
-                                                                        opt.learning_rate, opt.weight_decay,
-                                                                        opt.batch_size, opt.crop)
+    opt.model_name = '{}_{}_{}_{}_{}_lr_{}_decay_{}_bsz_{}_crop_{}'.format(opt.dataset, prefix, opt.method, opt.nce_k, opt.model,
+                                                                           opt.learning_rate, opt.weight_decay,
+                                                                           opt.batch_size, opt.crop)
 
     if opt.warm:
         opt.model_name = '{}_warm'.format(opt.model_name)
