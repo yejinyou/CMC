@@ -1,33 +1,61 @@
-import torch 
-from netdissect import show, renormalize
+from CMC.quickdataset import QuickImageFolder
+from CMC.models.resnet import InsResNet50
+from netdissect import nethook
+import torch
+from torchvision import transforms
 
-def imsave(imlist, fname, source='imagenet', blocks=5):
-    """
-    Save the list of images(pixel tensors) to the inputted filename
-    """
-    if len(imlist)==1:
-        renormalize.as_image(imlist[0], source=source).save(fname, format='png')
-    else:
-        im1 = renormalize.as_image(imlist[0], source=source)
-        w, h = im1.width, im1.height
-        num_vert = len(imlist) // blocks + 1
-        dst = Image.new('RGB', (w*blocks, h*num_vert))
-        for i, img in enumerate(imlist):
-            dst.paste(renormalize.as_image(img, source=source),\
-                      ((i%blocks)*w, (i//blocks)*h))
-        dst.save(fname, format='png')
 
-def split_img(img):
-    x1, x2 = torch.split(img, [3, 3], dim=0)
-    return x1
+crop = 0.2
+crop_padding = 32
 
-def show_idx(idxlist, source='imagenet'):
-    """
-    Show images corresponding to the inputted index list
-    """
-    if len(idxlist)==1:
-        print("image", idxlist[0])
-        show(renormalize.as_image(split_img(val_dataset[idxlist[0]][0]), source=source))
-    else:
-        print("idx list", idxlist)
-        show([[renormalize.as_image(split_img(val_dataset[idx][0]), source=source)] for idx in idxlist])
+num_workers = 24
+train_sampler = None
+moco = True
+
+image_size = 224
+mean = [0.485, 0.456, 0.406]
+std = [0.229, 0.224, 0.225]
+normalize = transforms.Normalize(mean=mean, std=std)
+
+
+
+def get_val_dataset(dataset, batch_size=1):
+
+    if dataset == "imagenet":
+        data_path =  "/data/vision/torralba/datasets/imagenet_pytorch/imagenet_pytorch"
+    elif dataset == "places365":
+        data_path = "/data/vision/torralba/datasets/places/" + \
+                    "places365_standard/places365standard_easyformat"
+    val_folder = data_path + "/val"
+
+    val_transform = transforms.Compose([
+                    transforms.Resize(image_size + crop_padding),
+                    transforms.CenterCrop(image_size),
+                    transforms.ToTensor(),
+                    normalize,
+                ])
+    
+    ds = QuickImageFolder(val_folder, transform=val_transform, shuffle=True)#, two_crop=False)
+    ds_loader = torch.utils.data.DataLoader(
+            ds, batch_size=batch_size, shuffle=(train_sampler is None),
+            num_workers=num_workers, pin_memory=True, sampler=train_sampler)
+    return ds, ds_loader
+
+
+def get_moco_model(dataset, epoch=240):
+    
+    folder_path = "CMC/CMC_data/{}_models".format(dataset)
+    model_name = "/{}_MoCo0.999_softmax_16384_resnet50".format(dataset) + \
+                 "_lr_0.03_decay_0.0001_bsz_128_crop_0.2_aug_CJ"
+    epoch_name = "/ckpt_epoch_{}.pth".format(epoch)
+    my_path = folder_path + model_name + epoch_name
+    
+    checkpoint = torch.load(my_path)
+    model_checkpoint = {key.replace(".module",""):val for key, val in checkpoint['model'].items()}
+
+    model = InsResNet50(parallel=False)
+    model.load_state_dict(model_checkpoint)
+    model = nethook.InstrumentedModel(model)
+    return model
+
+

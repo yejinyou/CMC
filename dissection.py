@@ -209,7 +209,9 @@ def main():
         pin_memory=True,
         cachefile='results/{}/{}_cache_top10images.npz'.format(dataset, layername))
 
-
+    file = open("results/{}/unit_images.pkl".format(dataset, layername), 'wb')
+    pickle.dump(unit_images, file)
+        
     # Load a segmentation model
     segmodel, seglabels, segcatlabels = setting.load_segmenter('netpqc')
 
@@ -231,8 +233,10 @@ def main():
         dataset=ds,
         sample_size=sample_size,
         cachefile='results/{}/{}_cache_condi99.npz'.format(dataset, layername))
-
+    
     iou99 = tally.iou_from_conditional_indicator_mean(condi99)
+    file = open("results/{}/{}_iou99.pkl".format(dataset, layername), 'wb')
+    pickle.dump(iou99, file)
     
     # Show units with best match to a segmentation class
     iou_unit_label_99 = sorted([(

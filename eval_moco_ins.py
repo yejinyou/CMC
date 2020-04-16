@@ -59,7 +59,7 @@ def parse_option():
     parser.add_argument('--crop', type=float, default=0.2, help='minimum crop')
 
     # dataset
-    parser.add_argument('--dataset', type=str, default='imagenet100', choices=['imagenet100', 'imagenet','places365'])
+    parser.add_argument('--dataset', type=str, default='imagenet', choices=[ 'imagenet','places365'])
 
     # resume
     parser.add_argument('--resume', default='', type=str, metavar='PATH',
