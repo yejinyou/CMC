@@ -2,7 +2,7 @@ from __future__ import print_function
 
 import numpy as np
 from torchvision.datasets import VisionDataset
-
+import random 
 from PIL import Image
 
 
@@ -83,7 +83,7 @@ class QuickImageFolder(VisionDataset):
    
 
     def __init__(self, root, loader=default_loader, extensions=None, transform=None,
-                 target_transform=None, is_valid_file=None, two_crop=False):
+                 target_transform=None, is_valid_file=None, two_crop=False, shuffle = None):
         super(QuickImageFolder, self).__init__(root, transform=transform,
                                             target_transform=target_transform)
         classes, class_to_idx = self._find_classes(self.root)
@@ -101,6 +101,10 @@ class QuickImageFolder(VisionDataset):
         self.targets = [s[1] for s in samples]
         self.imgs = self.samples
         self.two_crop = two_crop
+        
+        if shuffle is not None: 
+            random.Random(shuffle).shuffle(self.imgs)
+
 
     def _find_classes(self, dir):
         """
